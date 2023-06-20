@@ -237,7 +237,7 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	km_stat_t kmst;
 	float chn_pen_gap, chn_pen_skip;
 
-    fprintf(stderr, "\n## mm_map_frag: %s\n", qname); //bjh
+    if (mm_dbg_flag) fprintf(stderr, "\n## mm_map_frag: %s\n", qname); //bjh
     
 	for (i = 0, qlen_sum = 0; i < n_segs; ++i)
 		qlen_sum += qlens[i], n_regs[i] = 0, regs[i] = 0;
@@ -333,12 +333,12 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	if (mm_dbg_flag & (MM_DBG_PRINT_SEED|MM_DBG_PRINT_CHAIN)) //bjh
 		for (j = 0; j < n_regs0; ++j)
 			for (i = regs0[j].as; i < regs0[j].as + regs0[j].cnt; ++i)
-				fprintf(stderr, "CN\t%s\t%d\t%s\t%d\t%c\t%d\t%d\t%d\n", qname,
+				fprintf(stderr, "CN\t%s\t%d\t%s\t%d\t%c\t%d\t%d\t%d\n", qname, //bjh added qname
                         j, mi->seq[a[i].x<<1>>33].name, (int32_t)a[i].x, "+-"[a[i].x>>63], (int32_t)a[i].y, (int32_t)(a[i].y>>32&0xff),
 						i == regs0[j].as? 0 : ((int32_t)a[i].y - (int32_t)a[i-1].y) - ((int32_t)a[i].x - (int32_t)a[i-1].x));
 
 
-    fprintf(stderr, "NREGS0_before_chain_post:\t%d\t%s\n", n_regs0, qname);
+    if (mm_dbg_flag) fprintf(stderr, "NREGS0_before_chain_post:\t%d\t%s\n", n_regs0, qname);
 
 	chain_post(opt, max_chain_gap_ref, mi, b->km, qlen_sum, n_segs, qlens, &n_regs0, regs0, a);
 	if (!is_sr && !(opt->flag&MM_F_QSTRAND)) {
@@ -346,21 +346,21 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 		n_regs0 = mm_filter_strand_retained(n_regs0, regs0);
 	}
 
-    fprintf(stderr, "NREGS0_after_chain_post:\t%d\t%s\n", n_regs0, qname);
+    if (mm_dbg_flag) fprintf(stderr, "NREGS0_after_chain_post:\t%d\t%s\n", n_regs0, qname);
     
-    if (n_regs0 == 1) {
+    if (opt->only_chimeric_candidates && n_regs0 == 1) {
         fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
       
     } else {
     
         if (n_segs == 1) { // uni-segment
-            fprintf(stderr, "N_SEGS=1\t%s\n", qname);
+            //fprintf(stderr, "N_SEGS=1\t%s\n", qname);
             regs0 = align_regs(opt, mi, b->km, qlens[0], seqs[0], &n_regs0, regs0, a);
             regs0 = (mm_reg1_t*)realloc(regs0, sizeof(*regs0) * n_regs0);
             mm_set_mapq(b->km, n_regs0, regs0, opt->min_chain_score, opt->a, rep_len, is_sr);
             n_regs[0] = n_regs0, regs[0] = regs0;
         } else { // multi-segment
-            fprintf(stderr, "N_SEGS=%d\t%s\n", n_segs, qname);
+            //fprintf(stderr, "N_SEGS=%d\t%s\n", n_segs, qname);
             mm_seg_t *seg;
             seg = mm_seg_gen(b->km, hash, n_segs, qlens, n_regs0, regs0, n_regs, regs, a); // split fragment chain to separate segment chains
             free(regs0);

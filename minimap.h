@@ -179,6 +179,9 @@ typedef struct {
 	int64_t cap_kalloc;
 
 	const char *split_prefix;
+
+    int only_chimeric_candidates;
+
 } mm_mapopt_t;
 
 // index reader
