@@ -349,7 +349,9 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
     if (mm_dbg_flag) fprintf(stderr, "NREGS0_after_chain_post:\t%d\t%s\n", n_regs0, qname);
     
     if (opt->only_chimeric_candidates && n_regs0 == 1) {
-        fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
+        
+        if (mm_dbg_flag) 
+            fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
       
     } else {
     
