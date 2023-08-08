@@ -224,6 +224,65 @@ static mm_reg1_t *align_regs(const mm_mapopt_t *opt, const mm_idx_t *mi, void *k
 	return regs;
 }
 
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define CHIMERIC_USE_REF 0
+
+inline int interval_match(const uint32_t start1, const uint32_t end1, const uint32_t start2, const uint32_t end2) {
+    return (start1 == start2) && (end1 == end2);
+}
+
+inline int interval_overlap(const uint32_t start1, const uint32_t end1, const uint32_t start2, const uint32_t end2,
+                            const float min_overlap) {
+    // returns 1 if the intervals overlap and overlap_size/min_interval_size >= min_overlap
+    if ((start1 <= end2) && (start2 <= end1)) {
+        if (min_overlap == 0) return 1;
+        if (mm_dbg_flag) {
+            fprintf(stderr, "overlap delta=%d\tratio=%f\n", MIN(end1, end2) - MAX(start1, start2),
+                    (float) (MIN(end1, end2) - MAX(start1, start2)) / (float) MIN((end1 - start1), (end2 - start2)));
+        }
+        return (float) (MIN(end1, end2) - MAX(start1, start2)) / (float) MIN((end1 - start1), (end2 - start2)) >= min_overlap;
+    }
+    return 0;
+}
+
+inline int is_non_chimeric(const int n_regs0, const mm_reg1_t *regs0, const mm128_t *a, const mm_mapopt_t *opt) {
+    // returns 1 iff the matches are not potentially chimeric:
+    // 1. if we only have a single chain
+    // 2. if all the matches correspond either to the same read region (repetitive hits)
+    // or reference region (duplicated sequence within the read)
+    if (n_regs0 == 1) return 1;
+    //if (opt->max_overlap_in_chimeric >= 1) return 0;
+    // check if all the matches correspond to the same read or reference regions
+    for (int i = 1; i < n_regs0; ++i) {
+        const uint32_t q_start_prev = a[regs0[i-1].as].y, q_end_prev = a[regs0[i-1].as + regs0[i-1].cnt - 1].y;
+        const uint32_t q_start_curr = a[regs0[i].as].y, q_end_curr = a[regs0[i].as + regs0[i].cnt - 1].y;
+        const uint32_t r_start_prev = a[regs0[i-1].as].x, r_end_prev = a[regs0[i-1].as + regs0[i-1].cnt - 1].x;
+        const uint32_t r_start_curr = a[regs0[i].as].x, r_end_curr = a[regs0[i].as + regs0[i].cnt - 1].x;
+        const uint8_t tid_prev = (a[regs0[i-1].as].x << 1) >> 33, tid_curr = (a[regs0[i].as].x << 1) >> 33;
+        if (mm_dbg_flag) {
+            fprintf(stderr, "checking coords %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                    tid_prev, r_start_prev, r_end_prev, tid_curr, r_start_curr, r_end_curr,
+                    q_start_prev, q_end_prev, q_start_curr, q_end_curr);
+        }
+        if (interval_match(q_start_prev, q_end_prev, q_start_curr, q_end_curr)) continue;
+        if (interval_overlap(q_start_prev, q_end_prev, q_start_curr, q_end_curr,
+                             opt->max_overlap_in_chimeric)) continue;
+        if (CHIMERIC_USE_REF && tid_prev == tid_curr) {
+            if (mm_dbg_flag)
+                fprintf(stderr, "reference\n");
+            if (interval_match(r_start_prev, r_end_prev, r_start_curr, r_end_curr)) continue;
+            if (interval_overlap(r_start_prev, r_end_prev, r_start_curr, r_end_curr,
+                                 opt->max_overlap_in_chimeric)) continue;
+        }
+        return 0; // at least two regions did not match/overlap in both the read and the reference
+        // note: this is still permissive since it checks for consecutive pair overlaps only and
+        // can be further restricted by considering all-pair overlaps and counting connected components
+        // or sorting the chains
+    }
+    return 1;
+}
+
 void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **seqs, int *n_regs, mm_reg1_t **regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *qname)
 {
 	int i, j, rep_len, qlen_sum, n_regs0, n_mini_pos;
@@ -257,13 +316,13 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	if (mm_dbg_flag & MM_DBG_PRINT_SEED) { //bjh
 		fprintf(stderr, "RS\t%d\n", rep_len);
 		for (i = 0; i < n_a; ++i)
-			fprintf(stderr, "SD\t%s\t%s\t%d\t%c\t%d\t%d\t%d\n", 
+            fprintf(stderr, "SD\t%s\t%s\t%d\t%c\t%d\t%d\t%d\n",
                     qname, //bjh
-                    mi->seq[a[i].x<<1>>33].name, 
-                    (int32_t)a[i].x, "+-"[a[i].x>>63], 
-                    (int32_t)a[i].y, 
-                    (int32_t)(a[i].y>>32&0xff),
-					i == 0? 0 : ((int32_t)a[i].y - (int32_t)a[i-1].y) - ((int32_t)a[i].x - (int32_t)a[i-1].x));
+                    mi->seq[a[i].x << 1 >> 33].name,
+                    (int32_t) a[i].x, "+-"[a[i].x >> 63],
+                    (int32_t) a[i].y,
+                    (int32_t)(a[i].y >> 32 & 0xff),
+                    i == 0 ? 0 : ((int32_t) a[i].y - (int32_t) a[i - 1].y) - ((int32_t) a[i].x - (int32_t) a[i - 1].x));
 	}
 
 	// set max chaining gap on the query and the reference sequence
@@ -347,14 +406,25 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	}
 
     if (mm_dbg_flag) fprintf(stderr, "NREGS0_after_chain_post:\t%d\t%s\n", n_regs0, qname);
-    
-    if (opt->only_chimeric_candidates && n_regs0 == 1) {
-        
-        if (mm_dbg_flag) 
+
+    if (opt->only_chimeric_candidates && is_non_chimeric(n_regs0, regs0, a, opt)) {
+        if (mm_dbg_flag)
             fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
-      
+
     } else {
-    
+        if (mm_dbg_flag) {
+            for (j = 0; j < n_regs0; ++j) {
+                const int idx_start = regs0[j].as;
+                const int idx_end = regs0[j].as + regs0[j].cnt - 1;
+                fprintf(stderr, "CN-CHIMERIC\t%s\t%d\t%s\t%d\t%d\t%c\t%d\t%d\n",
+                        qname, j, mi->seq[a[idx_start].x << 1 >> 33].name,
+                        (int32_t) a[idx_start].x,
+                        (int32_t) a[idx_end].x,
+                        "+-"[a[idx_start].x >> 63],
+                        (int32_t) a[idx_start].y,
+                        (int32_t) a[idx_end].y);
+            }
+        }
         if (n_segs == 1) { // uni-segment
             //fprintf(stderr, "N_SEGS=1\t%s\n", qname);
             regs0 = align_regs(opt, mi, b->km, qlens[0], seqs[0], &n_regs0, regs0, a);

@@ -78,6 +78,7 @@ static ko_longopt_t long_options[] = {
 	{ "no-hash-name",   ko_no_argument,       353 },
 	{ "secondary-seq",  ko_no_argument,       354 },
     { "only_chimeric",  ko_no_argument,       355 },
+    { "min-chimeric-ov",ko_required_argument, 'z' },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -181,6 +182,7 @@ int main(int argc, char *argv[])
 		else if (c == 'B') opt.b = atoi(o.arg);
 		else if (c == 'b') opt.transition = atoi(o.arg);
 		else if (c == 's') opt.min_dp_max = atoi(o.arg);
+        else if (c == 'z') opt.max_overlap_in_chimeric = atof(o.arg);
 		else if (c == 'C') opt.noncan = atoi(o.arg);
 		else if (c == 'I') ipt.batch_size = mm_parse_num(o.arg);
 		else if (c == 'K') opt.mini_batch_size = mm_parse_num(o.arg);
