@@ -234,14 +234,14 @@ inline int interval_match(const uint32_t start1, const uint32_t end1, const uint
 
 inline int interval_overlap(const uint32_t start1, const uint32_t end1, const uint32_t start2, const uint32_t end2,
                             const float min_overlap) {
-    // returns 1 if the intervals overlap and overlap_size/min_interval_size >= min_overlap
+    // returns 1 if the intervals overlap and overlap_size/min_interval_size > min_overlap
     if ((start1 <= end2) && (start2 <= end1)) {
         if (min_overlap == 0) return 1;
         if (mm_dbg_flag) {
             fprintf(stderr, "overlap delta=%d\tratio=%f\n", MIN(end1, end2) - MAX(start1, start2),
                     (float) (MIN(end1, end2) - MAX(start1, start2)) / (float) MIN((end1 - start1), (end2 - start2)));
         }
-        return (float) (MIN(end1, end2) - MAX(start1, start2)) / (float) MIN((end1 - start1), (end2 - start2)) >= min_overlap;
+        return (float) (MIN(end1, end2) - MAX(start1, start2)) / (float) MIN((end1 - start1), (end2 - start2)) > min_overlap;
     }
     return 0;
 }
@@ -266,14 +266,16 @@ inline int is_non_chimeric(const int n_regs0, const mm_reg1_t *regs0, const mm12
                     q_start_prev, q_end_prev, q_start_curr, q_end_curr);
         }
         if (interval_match(q_start_prev, q_end_prev, q_start_curr, q_end_curr)) continue;
-        if (interval_overlap(q_start_prev, q_end_prev, q_start_curr, q_end_curr,
-                             opt->max_overlap_in_chimeric)) continue;
+        if (opt->max_overlap_in_chimeric < 1 && interval_overlap(q_start_prev, q_end_prev,
+                                                                 q_start_curr, q_end_curr,
+                                                                 opt->max_overlap_in_chimeric)) continue;
         if (CHIMERIC_USE_REF && tid_prev == tid_curr) {
             if (mm_dbg_flag)
                 fprintf(stderr, "reference\n");
             if (interval_match(r_start_prev, r_end_prev, r_start_curr, r_end_curr)) continue;
-            if (interval_overlap(r_start_prev, r_end_prev, r_start_curr, r_end_curr,
-                                 opt->max_overlap_in_chimeric)) continue;
+            if (opt->max_overlap_in_chimeric < 1 && interval_overlap(r_start_prev, r_end_prev,
+                                                                     r_start_curr, r_end_curr,
+                                                                     opt->max_overlap_in_chimeric)) continue;
         }
         return 0; // at least two regions did not match/overlap in both the read and the reference
         // note: this is still permissive since it checks for consecutive pair overlaps only and
