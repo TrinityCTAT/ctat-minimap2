@@ -78,7 +78,7 @@ static ko_longopt_t long_options[] = {
 	{ "no-hash-name",   ko_no_argument,       353 },
 	{ "secondary-seq",  ko_no_argument,       354 },
     { "only_chimeric",  ko_no_argument,       355 },
-    { "min-chimeric-ov",ko_required_argument, 'z' },
+    { "max-chimeric-ov",ko_required_argument, 'z' },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
