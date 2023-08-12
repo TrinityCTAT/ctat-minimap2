@@ -78,7 +78,7 @@ static ko_longopt_t long_options[] = {
 	{ "no-hash-name",   ko_no_argument,       353 },
 	{ "secondary-seq",  ko_no_argument,       354 },
     { "only_chimeric",  ko_no_argument,       355 },
-    { "max-chimeric-ov",ko_required_argument, 'z' },
+    { "min-overlap-non-chimeric",ko_required_argument, 356 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -137,6 +137,11 @@ int main(int argc, char *argv[])
 	mm_realtime0 = realtime();
 	mm_set_opt(0, &ipt, &opt);
 
+    // init defaults for opts
+    opt.only_chimeric_candidates = 0;
+    opt.min_overlap_non_chimeric = 0.25;
+    
+
 	while ((c = ketopt(&o, argc, argv, 1, opt_str, long_options)) >= 0) { // test command line options and apply option -x/preset first
 		if (c == 'x') {
 			if (mm_set_opt(o.arg, &ipt, &opt) < 0) {
@@ -182,7 +187,6 @@ int main(int argc, char *argv[])
 		else if (c == 'B') opt.b = atoi(o.arg);
 		else if (c == 'b') opt.transition = atoi(o.arg);
 		else if (c == 's') opt.min_dp_max = atoi(o.arg);
-        else if (c == 'z') opt.max_overlap_in_chimeric = atof(o.arg);
 		else if (c == 'C') opt.noncan = atoi(o.arg);
 		else if (c == 'I') ipt.batch_size = mm_parse_num(o.arg);
 		else if (c == 'K') opt.mini_batch_size = mm_parse_num(o.arg);
@@ -247,6 +251,7 @@ int main(int argc, char *argv[])
 		else if (c == 353) opt.flag |= MM_F_NO_HASH_NAME; // --no-hash-name
 		else if (c == 354) opt.flag |= MM_F_SECONDARY_SEQ; // --secondary-seq
         else if (c == 355) opt.only_chimeric_candidates = 1;
+        else if (c == 356) opt.min_overlap_non_chimeric = atof(o.arg);
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -378,7 +383,13 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "                 - asm5/asm10/asm20 - asm-to-ref mapping, for ~0.1/1/5%% sequence divergence\n");
 		fprintf(fp_help, "                 - splice/splice:hq - long-read/Pacbio-CCS spliced alignment\n");
 		fprintf(fp_help, "                 - sr - genomic short-read mapping\n");
-		fprintf(fp_help, "\nSee `man ./minimap2.1' for detailed description of these and other advanced command-line options.\n");
+        fprintf(fp_help, "\n");
+        fprintf(fp_help, "  Chimeric settings:\n");
+        fprintf(fp_help, "    --only_chimeric   :only pursue those transcripts that are chimeric alignment candidates.\n");
+        fprintf(fp_help, "    --min-overlap-non-chimeric FLOAT :only those same-transcript alignments to diff loci overlapping by \n");
+        fprintf(fp_help, "                 this fraction of the query length are considered evidence for chimeras (default: 0.25)\n"); 
+        fprintf(fp_help, "\n");
+     	fprintf(fp_help, "\nSee `man ./minimap2.1' for detailed description of these and other advanced command-line options.\n");
 		return fp_help == stdout? 0 : 1;
 	}
 
