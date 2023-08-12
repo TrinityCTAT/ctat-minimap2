@@ -181,7 +181,7 @@ typedef struct {
 	const char *split_prefix;
 
     int only_chimeric_candidates;
-    float max_overlap_in_chimeric;
+    float min_overlap_non_chimeric;
 
 } mm_mapopt_t;
 
