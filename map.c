@@ -282,7 +282,36 @@ inline int is_non_chimeric(const char* qname, const int n_regs0, const mm_reg1_t
     // then return chimeric (0)
     // else non-chimeric (1)
     
-    
+    if (mm_dbg_flag) {
+        fprintf(stderr, 
+               "\n// Prelim alignment count: %d\n", n_regs0);
+        
+        // iterate through alignments, report seq ranges:
+        int i;
+        for (i = 0; i < n_regs0; ++i) { 
+
+            // query info
+            const uint32_t q_start_curr =  regs0[i].qs;
+            const uint32_t q_end_curr =  regs0[i].qe;
+
+            // ref coord info
+            const uint32_t r_start_curr = regs0[i].rs;
+            const uint32_t r_end_curr = regs0[i].re;
+
+            // chrom info
+            const uint8_t tid_curr = (a[regs0[i].as].x << 1) >> 33;
+
+            
+            fprintf(stderr, "%s\t%d\t%d\t%d\t%d\t%d\n",
+                    qname,
+                    tid_curr, 
+                    r_start_curr, r_end_curr,
+                    q_start_curr, q_end_curr);
+            
+        }
+    }
+
+
     float max_frac_overlap = -1.0; // set as neg1 so clear its not being used when frac overlap check is skipped altogether.
     int i;
     for (i = 1; i < n_regs0; ++i) {
