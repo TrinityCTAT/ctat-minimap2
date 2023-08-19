@@ -521,11 +521,21 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 
     if (mm_dbg_flag) fprintf(stderr, "NREGS0_after_chain_post:\t%d\t%s\n", n_regs0, qname);
 
-    if (opt->only_chimeric_candidates && is_non_chimeric(qname, n_regs0, regs0, a, opt)) {
+    if ( opt->only_chimeric_candidates
+           &&
+           (
+            ( n_regs0 == 1) // clearly not chimeric here
+                   ||
+              // optional query range overlap check
+              (n_regs0 > 1 && opt->check_chimeric_query_overlap == 1 && is_non_chimeric(qname, n_regs0, regs0, a, opt) )
+            )
+        ) {
+        
         if (mm_dbg_flag)
             fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
 
     } else {
+        // examining chimeric ( and non-chimeric alignments if not only_chimeric_candidates)
         if (mm_dbg_flag) {
             for (j = 0; j < n_regs0; ++j) {
                 const int idx_start = regs0[j].as;

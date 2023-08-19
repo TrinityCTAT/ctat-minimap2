@@ -79,6 +79,7 @@ static ko_longopt_t long_options[] = {
 	{ "secondary-seq",  ko_no_argument,       354 },
     { "only_chimeric",  ko_no_argument,       355 },
     { "min-overlap-non-chimeric",ko_required_argument, 356 },
+    { "check_chimeric_query_overlap", ko_no_argument, 357 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -140,6 +141,7 @@ int main(int argc, char *argv[])
     // init defaults for opts
     opt.only_chimeric_candidates = 0;
     opt.min_overlap_non_chimeric = 0.25;
+    opt.check_chimeric_query_overlap = 0;
     
 
 	while ((c = ketopt(&o, argc, argv, 1, opt_str, long_options)) >= 0) { // test command line options and apply option -x/preset first
@@ -252,6 +254,7 @@ int main(int argc, char *argv[])
 		else if (c == 354) opt.flag |= MM_F_SECONDARY_SEQ; // --secondary-seq
         else if (c == 355) opt.only_chimeric_candidates = 1;
         else if (c == 356) opt.min_overlap_non_chimeric = atof(o.arg);
+        else if (c == 357) opt.check_chimeric_query_overlap = 1;
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -386,7 +389,8 @@ int main(int argc, char *argv[])
         fprintf(fp_help, "\n");
         fprintf(fp_help, "  Chimeric settings:\n");
         fprintf(fp_help, "    --only_chimeric   :only pursue those transcripts that are chimeric alignment candidates.\n");
-        fprintf(fp_help, "    --min-overlap-non-chimeric FLOAT :only those same-transcript alignments to diff loci overlapping by \n");
+        fprintf(fp_help, "    --check_chimeric_query_overlap : check for overlap among query sequence region, require --min-overlap-non-chimeric\n");
+        fprintf(fp_help, "          --min-overlap-non-chimeric FLOAT :only those same-transcript alignments to diff loci overlapping by \n");
         fprintf(fp_help, "                 this fraction of the query length are considered evidence for chimeras (default: 0.25)\n"); 
         fprintf(fp_help, "\n");
      	fprintf(fp_help, "\nSee `man ./minimap2.1' for detailed description of these and other advanced command-line options.\n");

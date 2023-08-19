@@ -182,6 +182,7 @@ typedef struct {
 
     int only_chimeric_candidates;
     float min_overlap_non_chimeric;
+    int check_chimeric_query_overlap;
 
 } mm_mapopt_t;
 
