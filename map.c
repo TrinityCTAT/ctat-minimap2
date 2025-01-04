@@ -530,9 +530,13 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
               (n_regs0 > 1 && opt->check_chimeric_query_overlap == 1 && is_non_chimeric(qname, n_regs0, regs0, a, opt) )
             )
         ) {
+
+        // not pursuing alignment. Free mem.
+        free(regs0);
         
         if (mm_dbg_flag)
             fprintf(stderr, "-skipping further alignment of non-chimeric %s\n", qname);
+        
 
     } else {
         // examining chimeric ( and non-chimeric alignments if not only_chimeric_candidates)
