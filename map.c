@@ -250,7 +250,7 @@ inline float interval_overlap(const uint32_t start1, const uint32_t end1, const 
     return 0.0;
 }
 
-inline int is_non_chimeric(const char* qname, const int n_regs0, const mm_reg1_t *regs0, const mm128_t *a, const mm_mapopt_t *opt) {
+static inline int is_non_chimeric(const char* qname, const int n_regs0, const mm_reg1_t *regs0, const mm128_t *a, const mm_mapopt_t *opt) {
     // returns 1 iff the matches are not potentially chimeric:
     // 1. if we only have a single chain
     // 2. if all the matches correspond either to the same read region (repetitive hits)
